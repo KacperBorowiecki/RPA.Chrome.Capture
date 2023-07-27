@@ -1,3 +1,11 @@
+// Set the logging state
+chrome.storage.local.set({logging: false});
+
+// Get the logging state
+chrome.storage.local.get(['logging'], function(result) {
+    console.log('Logging state is ' + result.logging);
+});
+
 chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
     if (request.action === 'capture') {
         chrome.tabs.captureVisibleTab(null, {format: 'png'}, function(dataUrl) {
@@ -42,24 +50,40 @@ request.onsuccess = function(event) {
 };
 
 function startLogging() {
-  if (!logging) {
-    logging = true;
-    // Send a message to content.js to start logging
-    chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
-      chrome.tabs.sendMessage(tabs[0].id, {command: "startLogging"});
-    });
-  }
+  // Get the logging state
+  chrome.storage.local.get(['logging'], function(result) {
+    if (!result.logging) {
+      // Send a message to content.js to start logging
+      // Query all tabs and send them the startLogging message
+      chrome.tabs.query({}, function(tabs) {
+        for (let i = 0; i < tabs.length; i++) {
+          chrome.tabs.sendMessage(tabs[i].id, {command: "startLogging"});
+		  console.log(tabs[i].id)
+        }
+      });
+	        // Set the logging state to true
+      chrome.storage.local.set({logging: true});
+    }
+  });
 }
 
 function stopLogging() {
-  if (logging) {
-    logging = false;
-    // Send a message to content.js to stop logging
-    chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
-      chrome.tabs.sendMessage(tabs[0].id, {command: "stopLogging"});
-    });
-  }
+  // Get the logging state
+  chrome.storage.local.get(['logging'], function(result) {
+    if (result.logging) {
+      // Send a message to content.js to stop logging
+      // Query all tabs and send them the stopLogging message
+      chrome.tabs.query({}, function(tabs) {
+        for (let i = 0; i < tabs.length; i++) {
+          chrome.tabs.sendMessage(tabs[i].id, {command: "stopLogging"});
+        }
+      });
+		// Set the logging state to false
+      chrome.storage.local.set({logging: false});
+    }
+  });
 }
+
 
 async function addLog(log) {
     console.log("Adding log: ", log);
@@ -118,3 +142,94 @@ function downloadLogs() {
     URL.revokeObjectURL(url);
   };
 }
+
+
+chrome.tabs.onCreated.addListener(function(tab) {
+    chrome.storage.local.get(['logging'], function(result) {
+        if (result.logging) {
+            console.log('Tab opened with ID: ' + tab.id);
+            let log = {
+                type: 'NewTabOpened',
+                url: tab.url,
+                timestamp: new Date().getTime()
+            };
+            addLog(log);
+            console.log(log);
+        }
+    });
+});
+
+chrome.tabs.onRemoved.addListener(function(tabId, removeInfo) {
+    chrome.storage.local.get(['logging'], function(result) {
+        if (result.logging) {
+            console.log('Tab closed with ID: ' + tabId);
+            let log = {
+                type: 'TabRemoved',
+                timestamp: new Date().getTime()
+            };
+            addLog(log);
+            console.log(log);
+        }
+    });
+});
+
+chrome.tabs.onActivated.addListener(function(activeInfo) {
+    chrome.storage.local.get(['logging'], function(result) {
+        if (result.logging) {
+            console.log('Tab activated with ID: ' + activeInfo.tabId);
+            chrome.tabs.get(activeInfo.tabId, function(tab) {
+                let log = {
+                    type: 'TabActivated',
+                    url: tab.url,
+                    timestamp: new Date().getTime()
+                };
+                addLog(log);
+                console.log(log);
+            });
+        }
+    });
+});
+
+chrome.tabs.onUpdated.addListener(function(tabId, changeInfo, tab) {
+    chrome.storage.local.get(['logging'], function(result) {
+        if (result.logging) {
+            // If the URL has changed
+            if (changeInfo.url) {
+                console.log('Tab updated with ID: ' + tabId);
+                console.log('New URL: ' + changeInfo.url);
+                let log = {
+                    type: 'urlChanged',
+                    url: changeInfo.url,
+                    timestamp: new Date().getTime()
+                };
+                addLog(log);
+                console.log(log);
+            }
+
+            if (changeInfo.status === 'complete') {
+                chrome.tabs.sendMessage(tabId, {command: "startLogging"});
+            }
+        }
+    });
+});
+
+chrome.webNavigation.onCommitted.addListener(function(details) {
+    chrome.storage.local.get(['logging'], function(result) {
+        if (result.logging) {
+            if (details.transitionType === 'reload') {
+                console.log('Tab refreshed with ID: ' + details.tabId);
+                let log = {
+                    type: 'refresh',
+                    url: details.url,
+                    timestamp: new Date().getTime()
+                };
+                addLog(log);
+                console.log(log);
+
+                // Send a message to the tab to start logging
+                chrome.tabs.sendMessage(details.tabId, {command: "startLogging"});
+            }
+        }
+    });
+});
+

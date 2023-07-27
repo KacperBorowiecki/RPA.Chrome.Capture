@@ -3,7 +3,7 @@
   "name": "Task Capture for RPA",
   "version": "1.0",
   "description": "An advanced tool for tracking and storing user's browser interactions, including clicked elements, navigational actions, and webpage details. The recorded actions can be later used for generating Python automation scripts with the use of Selenium. Ideal for RPA developers and testers.",
-  "permissions": ["activeTab", "storage", "tabs", "downloads"],
+  "permissions": ["activeTab", "storage", "tabs", "downloads", "http://*/*", "https://*/*", "webNavigation"],
   "background": {
     "scripts": ["background.js"],
     "persistent": false
