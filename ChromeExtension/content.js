@@ -7,64 +7,34 @@ var lastEventTime = 0;
 var scrollDifference = 0;
 
 
-function getFullSelector(element) {
-    var pieces = [];
-    while (element && element.tagName !== 'HTML') {
-        var piece = element.tagName.toLowerCase();
-        if (element.id) {
-            piece += '#' + element.id;
-        } else if (element.className && typeof element.className === 'string') {
-            piece += '.' + element.className.split(' ').join('.');
-        }
-        pieces.unshift(piece);
-        element = element.parentNode;
-    }
-    return pieces.join(' > ');
-}
-
-
-
 function getCssSelector(element) {
-    if (element === document) {
-        return "document";
-    } else {
-	var pieces = [];
-    while (element && element.tagName !== 'HTML') {
-        var piece = element.tagName.toLowerCase();
-        if (element.id) {
-            piece += '#' + element.id;
-        } else if (element.className && typeof element.className === 'string') {
-            piece += '.' + element.className.split(' ').join('.');
+}
+
+function getFullXpath(element) {
+    function index(el) {
+        if (!el || !el.parentNode) {
+            return 0;
         }
-        pieces.unshift(piece);
-        element = element.parentNode;
+        var siblingsWithSameTag = Array.prototype.filter.call(el.parentNode.children, child => 
+            child.tagName === el.tagName);
+        return siblingsWithSameTag.length > 1 ? Array.prototype.indexOf.call(siblingsWithSameTag, el) + 1 : 0;
     }
-    return pieces.join(' > ');
-	}
 
+    var paths = [];
+    for (; element && element.nodeType == 1; element = element.parentNode) {
+        var idx = index(element);
+        var id = (idx > 0 ? '[' + idx + ']' : '');
+        paths.unshift(element.tagName.toLowerCase() + id);
+    }
+    return paths.length ? '/' + paths.join('/') : null;
 }
 
-function getElementXPath(element) {
-    if (element === document) {
-        return "/html/body";
-    } else {
-		var xpath = '';
-		while (element && element.nodeType === 1) {
-			var id = Array.prototype.indexOf.call(element.parentNode.childNodes, element);
-			id = id > 0 ? '[' + id + ']' : '';
-			xpath = '/' + element.nodeName.toLowerCase() + id + xpath;
-			element = element.parentNode;
-		}
-		return xpath;
-	}
-}
 
 //[DONE]
 var keydownListener = function(event) {
     let key = event.key;
     let targetElement = event.target;
-    let targetXPath = getElementXPath(targetElement);
-    let targetSelector = getCssSelector(targetElement);
+    let targetXPath = getFullXpath(targetElement);
 
     // Always add the new key to the sequence
     keySequence += key;
@@ -82,8 +52,7 @@ var keydownListener = function(event) {
                 type: 'keydown',
                 data: keySequence,
                 target: {
-                    xpath: targetXPath,
-                    selector: ''//targetSelector
+                    xpath: targetXPath
                 },
                 url: window.location.href,
                 timestamp: new Date().getTime()
@@ -101,8 +70,8 @@ var keydownListener = function(event) {
 //[DONE]
 var clickListener = function(event) {
     let targetElement = event.target;
-    let targetXPath = getElementXPath(targetElement);
-    let targetSelector = getCssSelector(targetElement);
+	console.log(event.target);
+    let targetXPath = getFullXpath(targetElement);
 
     // If there is a key sequence to log, log it
     if (keySequence !== '') {
@@ -117,8 +86,7 @@ var clickListener = function(event) {
             type: 'keydown',
             data: keySequence,
             target: {
-                xpath: targetXPath,
-                selector: '' //getCssSelector(document.activeElement)
+                xpath: targetXPath
             },
             url: window.location.href,
             timestamp: new Date().getTime()
@@ -140,8 +108,7 @@ var clickListener = function(event) {
             type: 'scroll',
             data: scrollDifference,
             target: {
-                xpath: getElementXPath(document),
-                selector: ''//getCssSelector(document)
+                xpath: getFullXpath(document)
             },
             url: window.location.href,
             timestamp: new Date().getTime()
@@ -155,8 +122,7 @@ var clickListener = function(event) {
     let log = {
         type: 'click',
         target: {
-            xpath: targetXPath,
-            selector: ''//targetSelector
+            xpath: targetXPath
         },
         url: window.location.href,
         timestamp: new Date().getTime()
@@ -182,8 +148,7 @@ var scrollListener = function(event) {
             type: 'scroll',
             data: scrollDifference,
             target: {
-                xpath: getElementXPath(document),
-                selector: ''//getCssSelector(document)
+                xpath: getFullXpath(document)
             },
             url: window.location.href,
             timestamp: new Date().getTime()
@@ -195,16 +160,13 @@ var scrollListener = function(event) {
     }, 1000);
 };
 
-
 var contextmenuListener = function(event) {
     let targetElement = event.target;
-    let targetXPath = getElementXPath(targetElement);
-    let targetSelector = getCssSelector(targetElement);
+    let targetXPath = getFullXpath(targetElement);
     let log = {
         type: 'contextmenu',
         target: {
-            xpath: targetXPath,
-            selector: ''//targetSelector
+            xpath: targetXPath
         },
         url: window.location.href,
         timestamp: new Date().getTime()
