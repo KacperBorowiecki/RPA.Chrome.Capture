@@ -1,7 +1,6 @@
 var keySequence = '';
-var resetKeySequenceTimer, resetScrollTimer;
+var resetKeySequenceTimer, resetScrollTimer, resetWheellTimer;
 var scrollPosition = window.scrollY;
-var logging = false;
 var logBuffer = [];
 var lastEventTime = 0;
 var scrollDifference = 0;
@@ -100,9 +99,9 @@ var clickListener = function(event) {
 
 	if(scrollDifference != 0){
 		
-		if (resetScrollTimer) {
-        clearTimeout(resetScrollTimer);
-		resetScrollTimer = null;
+		if (resetWheellTimer) {
+        clearTimeout(resetWheellTimer);
+		resetWheellTimer = null;
 		}
 		let log = {
             type: 'scroll',
@@ -157,7 +156,35 @@ var scrollListener = function(event) {
         console.log("scroll log:", log);
         chrome.runtime.sendMessage({command: "addLog", log: log});
 		scrollDifference = 0
-    }, 1000);
+    }, 500);
+};
+
+var wheelListener = function(event) {
+    let scrollDirection = event.deltaY;
+	scrollDifference += scrollDirection
+    let targetElement = event.target;
+    let targetXPath = getFullXpath(targetElement);
+
+    if (resetWheellTimer) {
+        clearTimeout(resetWheellTimer);
+        resetWheellTimer = null;
+    }
+
+    resetWheellTimer = setTimeout(function() {
+        let log = {
+            type: 'wheel',
+            by: scrollDifference,
+            target: {
+                xpath: targetXPath
+            },
+            url: window.location.href,
+            timestamp: new Date().getTime()
+        };
+        logBuffer.push(log);
+        console.log("wheel log:", log);
+        chrome.runtime.sendMessage({command: "addLog", log: log});
+		scrollDifference = 0;
+    }, 500);
 };
 
 var contextmenuListener = function(event) {
@@ -177,26 +204,42 @@ var contextmenuListener = function(event) {
 };
 
 function startLogging() {
-    if (!logging) {
-		console.log("Starting logging");
-        logging = true;
-        document.addEventListener('keydown', keydownListener);
-        document.addEventListener('click', clickListener);
-        window.addEventListener('scroll', scrollListener);
-        document.addEventListener('contextmenu', contextmenuListener);
-    }
+	console.log("Starting logging");
+    // Get the logging state
+    chrome.storage.local.get(['logging'], function(result) {
+		console.log(result);
+		// Changed not true to true
+        if (result.logging) {
+            console.log("Starting logging");
+            // Set the logging state to true
+            chrome.storage.local.set({logging: true}, function() {
+                document.addEventListener('keydown', keydownListener);
+                document.addEventListener('click', clickListener);
+                window.addEventListener('wheel', wheelListener);
+                document.addEventListener('contextmenu', contextmenuListener);
+            });
+        }
+    });
 }
 
 function stopLogging() {
-    if (logging) {
-		console.log("Stopping logging");
-        logging = false;
-        document.removeEventListener('keydown', keydownListener);
-        document.removeEventListener('click', clickListener);
-        window.removeEventListener('scroll', scrollListener);
-        document.removeEventListener('contextmenu', contextmenuListener);
-    }
+	console.log("Stopping logging");
+    // Get the logging state
+    chrome.storage.local.get(['logging'], function(result) {
+		// Changed true to not true
+        if (!result.logging) {
+            console.log("Stopping logging");
+            // Set the logging state to false
+            chrome.storage.local.set({logging: false}, function() {
+                document.removeEventListener('keydown', keydownListener);
+                document.removeEventListener('click', clickListener);
+                window.removeEventListener('wheel', wheelListener);
+                document.removeEventListener('contextmenu', contextmenuListener);
+            });
+        }
+    });
 }
+
 
 chrome.runtime.onMessage.addListener(
     function(request, sender, sendResponse) {
