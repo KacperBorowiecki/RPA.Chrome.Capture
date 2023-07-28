@@ -26,6 +26,9 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
         } else if (request.command == "addLog") {
             console.log("Add log message received");
             addLog(request.log);
+        } else if (request.command == "createG1antScript") {
+            console.log("createG1antScript message received");
+            createG1antScript();
         }
     }
 });
@@ -33,7 +36,7 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
 
 var logging = false;
 var logBuffer = [];
-var request = indexedDB.open('LogDatabase', 2);
+var request = indexedDB.open('LogDatabase', 3);
 var db;
 
 request.onupgradeneeded = function(event) {
@@ -58,7 +61,7 @@ function startLogging() {
       chrome.tabs.query({}, function(tabs) {
         for (let i = 0; i < tabs.length; i++) {
           chrome.tabs.sendMessage(tabs[i].id, {command: "startLogging"});
-		  console.log(tabs[i].id)
+		  //console.log(tabs[i].id)
         }
       });
 	        // Set the logging state to true
@@ -233,3 +236,60 @@ chrome.webNavigation.onCommitted.addListener(function(details) {
     });
 });
 
+function parseLogToG1ANT(log) {
+    let g1antScript = "";
+	let searchValue = `search ‴${log.target.xpath}‴ by ‴xpath‴`;
+    switch(log.type) {
+        case 'keydown'://[done]
+            g1antScript = `selenium.type text ‴${log.data}‴ ${searchValue}`;
+            break;
+        case 'click'://[done]
+            g1antScript = `selenium.click search ‴${log.target.xpath}‴ by ‴xpath‴`;
+            break;
+        case 'NewTabOpened'://need to add logic - has to be opened tab with new url. no option to open tab without url
+            g1antScript = `selenium.newtab url ${log.url}`;
+            break;
+        case 'TabRemoved'://need to add logic about closing tab - need to know which tab should be closed. First activate this tab, if not activated
+            g1antScript = `selenium.closetab`;
+            break;
+        case 'TabActivated'://[done]
+            g1antScript = `selenium.activatetab search ‴${log.url}‴ by ‴url‴`;
+            break;
+        case 'urlChanged'://[done]
+            g1antScript = `selenium.seturl url ‴${log.url}‴`;
+            break;
+        case 'refresh'://[done]
+            g1antScript = `selenium.refresh`;
+            break;
+		case 'wheel'://[done]
+			g1antScript = `selenium.runscript script ‴var xpath = ${log.target.xpath}; var evaluator = new XPathEvaluator(); var result = evaluator.evaluate(xpath, document.documentElement, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);var element = result.singleNodeValue;element.scrollBy(0,{log.scrollBy});‴`
+        default:
+            console.log(`Unknown log type: ${log.type}`);
+    }
+
+    return g1antScript;
+}
+
+
+function createG1antScript() {
+	console.log('command started')
+	var transaction = db.transaction(["LogStore"]);
+	var objectStore = transaction.objectStore("LogStore");
+
+	var logScripts = [];
+
+	objectStore.openCursor().onsuccess = function(event) {
+		var cursor = event.target.result;
+		if (cursor) {
+			var log = cursor.value;
+			var script = parseLogToG1ANT(log);
+			logScripts.push(script);
+			cursor.continue();
+		} else {
+			// Done iterating through all logs
+			var fullScript = logScripts.join('\n');
+			console.log(fullScript);
+		}
+	};
+
+}
