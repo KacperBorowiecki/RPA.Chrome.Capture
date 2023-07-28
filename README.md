@@ -1,7 +1,8 @@
-# Project.Name
- Some useful scripts written in G1ant.Studio
-> Outline a brief description of your project.
-> Live demo [_here_](https://www.example.com). <!-- If you have the project hosted somewhere, include the link here. -->
+# Task Capture for RPA
+Chrome extension which capture activities from the browser.
+All logs are saved in database and may be downloaded.
+Logs may be automaticly converted for G1ant.Studio script - RPA robot.
+
 
 ## Table of Contents
 * [General Info](#general-information)
@@ -14,77 +15,72 @@
 * [Room for Improvement](#room-for-improvement)
 * [Acknowledgements](#acknowledgements)
 * [Contact](#contact)
-<!-- * [License](#license) -->
 
 
 ## General Information
 - Provide general information about your project here.
-- What problem does it (intend to) solve?
-- What is the purpose of your project?
-- Why did you undertake it?
-<!-- You don't have to answer all the questions - just the ones relevant to your project. -->
-
+- This is a tool, which RPA developers can use, to record webautomation. It also may be used by a clients, to record their process to automate.
+- I started creating this tool, to speedup my work as RPA Developer - with this tool I can generate web automations automatically. Even if they are not perfect and need some polishment, it save much time
 
 ## Technologies Used
-- Tech 1 - version 1.0
-- Tech 2 - version 2.0
-- Tech 3 - version 3.0
+- JS
+- HTML
+- ChatGPT
 
-
-## Features
-List the ready features here:
-- Awesome feature 1
-- Awesome feature 2
-- Awesome feature 3
+## Features:
+- Log user interactions as wheel-up/wheel-down, click, keyboard with xpath to the element on which action has been done. Also logs current url and timestamp
+- Log activities within tabs such as opening new tab, setting url, closing, activating or refreshing tab
+- Create g1ant.studio script
+- Possibility to download logs
 
 
 ## Screenshots
-![Example screenshot](./img/screenshot.png)
-<!-- If you have screenshots you'd like to share, include them here. -->
+![Extension](./img/extension_UI.png)
 
 
 ## Setup
-What are the project requirements/dependencies? Where are they listed? A requirements.txt or a Pipfile.lock file perhaps? Where is it located?
-
-Proceed to describe how to install / setup one's local environment / get started with the project.
+1. Copy repository
+2. Open Chrome brower on url "chrome://extensions/"
+3. In the top right corner of the Extensions page, enable the "Developer mode" toggle.
+4. Click on "Load unpacked."
+5. A file dialog will appear. Navigate to the location of 'ChromeExtension' in the folder with repository.
+6. Google Chrome will now install the extension from your disk. Once the installation is complete, you should see the extension listed among your installed extensions on the Extensions page.
 
 
 ## Usage
-How does one go about using it?
-Provide various use cases and code examples here.
-
-`write-your-code-here`
+Click button 'Start Logging' to start. Extension will start to gather your activities in Chrome.
+Click button 'Stop Logging' to disable gathering activities.
+Click button 'Download Logs' to download text file with all recorded logs.
+Click button 'g1antScript' to generate g1ant.Script. For now it appears in developers console.
 
 
 ## Project Status
-Project is: _in progress_ / _complete_ / _no longer being worked on_. If you are no longer working on it, provide reasons why.
+Project is: _in progress_
 
 
 ## Room for Improvement
-Include areas you believe need improvement / could be improved. Also add TODOs for future development.
-
 Room for improvement:
-- Improvement to be done 1
-- Improvement to be done 2
+- Clean the code. Do code refactoring.
+- Remove scroll listener
+- Fix loging keydown events (for now its f.e. 'ShiftD', change to -> 'D'
+- Create friendly UI
 
 To do:
-- Feature to be added 1
-- Feature to be added 2
+- Add possibility to download G1ant.Script as a file
+- Fix G1ant parser
+- Add python parser with possibility to download python script as a file
+- Add logic of checking previous xpath before logging wheel event
+- Add logic of getting url of closed tab
+- Add tab id's to logs
+- Add 'Clear Logs' button. Ask before starting loging if user would like to delete all previous logs.
+- Add whole html code to logs for further usage with ChatGPT
+- Change logic of starting and stopping -> create toggle button instead of two buttons
+- [MAYBE] Add JS Selectors to logs.
 
 
 ## Acknowledgements
-Give credit here.
-- This project was inspired by...
-- This project was based on [this tutorial](https://www.example.com).
-- Many thanks to...
+- Many thanks to whole G1ant team who inspired my to develop my programming skills.
 
 
 ## Contact
-Created by [@flynerdpl](https://www.flynerd.pl/) - feel free to contact me!
-
-
-<!-- Optional -->
-<!-- ## License -->
-<!-- This project is open source and available under the [... License](). -->
-
-<!-- You don't have to include all sections - just the one's relevant to your project -->
+Created by Kacper Borowiecki
