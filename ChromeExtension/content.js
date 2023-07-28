@@ -4,6 +4,7 @@ var scrollPosition = window.scrollY;
 var logBuffer = [];
 var lastEventTime = 0;
 var scrollDifference = 0;
+var lastXpath = ""
 
 
 function getCssSelector(element) {
@@ -35,14 +36,39 @@ var keydownListener = function(event) {
     let targetElement = event.target;
     let targetXPath = getFullXpath(targetElement);
 
-    // Always add the new key to the sequence
-    keySequence += key;
-
     // If there is a timeout scheduled, clear it
     if (resetKeySequenceTimer) {
         clearTimeout(resetKeySequenceTimer);
 		resetKeySequenceTimer = null;
     }
+	
+	if (key==='b') {
+		console.log("keydown: ", key);
+		console.log(lastXpath);
+		console.log(targetXPath);
+	}
+	
+	if (lastXpath != targetXPath){
+		if (keySequence !== '') {
+            let log = {
+                type: 'keydown',
+                data: keySequence,
+                target: {
+                    xpath: lastXpath
+                },
+                url: window.location.href,
+                timestamp: new Date().getTime()
+            };
+            logBuffer.push(log);
+            console.log("keydown log:", log);
+            chrome.runtime.sendMessage({command: "addLog", log: log});
+            keySequence = '';
+			lastXpath = targetXPath;
+	    }
+	}
+	
+	    // Always add the new key to the sequence
+    keySequence += key;
 
     // Set a new timeout
     resetKeySequenceTimer = setTimeout(function() {
@@ -62,7 +88,10 @@ var keydownListener = function(event) {
             keySequence = '';
         }
     }, 1000);
+	
+	lastXpath = targetXPath;
 };
+
 
 
 
@@ -173,7 +202,7 @@ var wheelListener = function(event) {
     resetWheellTimer = setTimeout(function() {
         let log = {
             type: 'wheel',
-            by: scrollDifference,
+            scrollBy: scrollDifference,
             target: {
                 xpath: targetXPath
             },
